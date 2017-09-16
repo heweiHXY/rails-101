@@ -8,30 +8,13 @@ class GroupsController < ApplicationController
 
   def show
     @group = Group.find(params[:id])
+    @posts = @group.posts 
   end
 
   def edit
   end
 
-  def new
-    @group = Group.new
-  end
-
-  def create
-    @group = Group.new(group_params)
-    @group.user = current_user
-
-    if @group.save
-      redirect_to groups_path
-    else
-      render :new
-    end
-  end
-
   def update
-
-    find_group_and_check_permission
-
     if @group.update(group_params)
       redirect_to groups_path, notice: "Update Success"
   else
@@ -40,8 +23,6 @@ class GroupsController < ApplicationController
 end
 
   def destroy
-    find_group_and_check_permission
-
     @group.destroy
     redirect_to groups_path, alert: "Group deleted"
   end
