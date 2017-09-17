@@ -1,6 +1,8 @@
 class GroupsController < ApplicationController
-  before_action :authenticate_user! , only: [:new, :create, :edit, :update, :destroy, :join, :quit]
-  before_action :find_group_and_check_permission, only: [:edit, :update, :destroy]
+
+    before_action :authenticate_user! , only: [:new, :create, :edit, :update, :destroy]
+    before_action :find_group_and_check_permission, only: [:edit, :update, :destroy]
+
   def index
     @groups = Group.all
   end
@@ -13,58 +15,59 @@ class GroupsController < ApplicationController
   def edit
   end
 
-  def update
-    if @group.update(group_params)
-      redirect_to groups_path, notice: "Update Success"
-  else
-    render :edit
-  end
-end
-
-  def destroy
-    @group.destroy
-    flash[:alert] = "Group delete"
-    redirect_to groups_path
-  end
-
-  def join
     @group = Group.find(params[:id])
 
-     if !current_user.is_member_of?(@group)
-       current_user.join!(@group)
-       flash[:notice] = "加入本讨论版成功！"
-     else
-       flash[:warning] = "你已经是本讨论版成员了！"
-     end
+    if current_user != @group.user
+      redirect_to root_path, alert: "You have no permission."
+    end
+  end
 
-     redirect_to group_path(@group)
-   end
+  def new
+    @group = Group.new
+  end
 
-   def quit
-     @group = Group.find(params[:id])
+  def create
+    @group = Group.new(group_params)
+    @group.user = current_user
 
-     if current_user.is_member_of?(@group)
-       current_user.quit!(@group)
-       flash[:alert] = "已退出本讨论版！"
-     else
-       flash[:warning] = "你不是本讨论版成员，怎么退出 XD"
-     end
+    if @group.save
+      current_user.join!(@group)
+      redirect_to groups_path
+    else
+      render :new
+    end
+  end
 
-     redirect_to group_path(@group)
-   end
+  def update
 
-   private
+    find_group_and_check_permission
 
-   def find_group_and_check_permission
-     @group = Group.find(params[:id])
+    if @group.update(group_params)
+      redirect_to groups_path, notice: "Update Success"
+    else
+      render :edit
+    end
+  end
 
-     if current_user != @group.user
-       redirect_to root_path, alert: "You have no permission."
-     end
-   end
+  def destroy
+    find_group_and_check_permission
 
-   def group_params
-     params.require(:group).permit(:title, :description)
-   end
+    @group.destroy
+    redirect_to groups_path, alert: "Group deleted"
+  end
 
- end
+  private
+
+  def find_group_and_check_permission
+    @group = Group.find(params[:id])
+
+    if current_user != @group.user
+      redirect_to root_path, alert: "You have no permission."
+    end
+  end
+
+  def group_params
+    params.require(:group).permit(:title, :description)
+  end
+
+end
